@@ -8,7 +8,7 @@ find_venv_above() {
         #echo "$search_path"
         v=$(find $search_path -maxdepth 3 -mindepth 3 -path "*/bin/activate")
         [[ $v != "" ]] && {
-          printf '%s\n' "$search_path"
+          #printf '%s\n' "$search_path"
           . $v
           return 0
         }
@@ -17,4 +17,5 @@ find_venv_above() {
     deactivate
 }
 
-alias=find_venv_above
+alias cd=find_venv_above
+echo 'lalall'
