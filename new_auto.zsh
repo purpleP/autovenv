@@ -5,10 +5,9 @@ find_venv_above() {
     builtin cd $search_path
     search_path=$(pwd)
     while [[ ${search_path} = /*/* ]]; do
-        #echo "$search_path"
-        v=$(find $search_path -maxdepth 3 -mindepth 3 -path "*/bin/activate" 2>/dev/null)
+        v=$(for d in $search_path/.*/ $search_path/*/; do echo $d; done | xargs -I {} $SHELL -c '[ -e {}bin/activate ] && echo "{}bin/activate"');
         [[ $v != "" ]] && {
-          #printf '%s\n' "$search_path"
+          v=$(echo $v | head -n 1)
           . $v
           return 0
         }
