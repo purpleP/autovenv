@@ -1,15 +1,11 @@
 chpwd() {
     unsetopt nomatch 2>/dev/null
-    local search_path v
+    local search_path venv_dir
     search_path=$(pwd)
     local common_home=$(dirname $HOME)
     while [[ $search_path != $common_home && $search_path != '' ]]; do
-        v=$(for d in $search_path/.*/ $search_path/*/; do echo $d; done | xargs -I {} $SHELL -c '[ -e {}bin/activate ] && echo "{}bin/activate"') 2>/dev/null;
-        [[ $v != "" ]] && {
-          v=$(echo $v | head -n 1)
-          . $v
-          return 0
-        }
+        venv_dir=$(find -maxdepth 1 -type d -exec test -e "{}/bin/activate" \; -print -quit);
+        [[ $venv_dir != "" ]] && . $venv_dir/bin/activate && return 0
         search_path=${search_path%/*}
     done
     deactivate 2>/dev/null
