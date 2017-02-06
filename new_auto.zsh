@@ -1,22 +1,43 @@
-find_venv() { unsetopt nomatch 2>/dev/null
+activate_venv() {
+    unsetopt nomatch 2>/dev/null
+    local venv=$(find_venv)
+    if [[ -n $venv ]]; then
+        . $venv/bin/activate
+    else
+        deactivate 2>/dev/null
+    fi
+    return 0
+}
+
+find_venv() {
+    local project_root=$(git rev-parse --show-toplevel 2>/dev/null)
+    if [[ -n $project_root ]]; then
+        venv_dir=$(find -maxdepth 1 -type d -exec test -e "{}/bin/activate" \; -print -quit)
+        [[ -n $venv_dir ]]; echo $venv_dir; return 0
+    fi
     local search_path venv_dir
     search_path=$(pwd)
     local common_home=$(dirname $HOME)
     while [[ $search_path != $common_home && $search_path != '' ]]; do
         venv_dir=$(find -maxdepth 1 -type d -exec test -e "{}/bin/activate" \; -print -quit);
-        [[ $venv_dir != "" ]] && . $venv_dir/bin/activate && return 0
-        search_path=${search_path%/*}
+        [[ -n $venv_dir ]]; echo $venv_dir; return 0
+        search_path=$(dirname $search_path)
     done
-    deactivate 2>/dev/null
     return 0
 }
 
 has_python_packages() {
-    local package=$(find $(pwd) -maxdepth 1 -type d -exec test -e "{}/__init__.py" \; -print -quit)
-    if [[ -n $package && ":$PYTHONPATH:" != *":$(pwd):"* ]]; then
-        export PYTHONPATH=$PYTHONPATH:$(pwd)
+    local search_path=$(pwd)
+    if ! [[ -e $(pwd)/__init__.py ]]; then
+        local package=$(find $(pwd) -maxdepth 1 -type d -exec test -e "{}/__init__.py" \; -print -quit)
+        if [[ -n $package && ":$PYTHONPATH:" != *":$(pwd):"* ]]; then
+            for path in ${PYTHONPATH//:/ }; do
+                [[ $PWD/ = $path ]]; return 0
+            done
+            export PYTHONPATH=$PYTHONPATH:$(pwd)
+        fi
     fi
     return 0
 }
 chpwd_functions=(${chpwd_functions[@]} "has_python_packages")
-chpwd_functions=(${chpwd_functions[@]} "find_venv")
+chpwd_functions=(${chpwd_functions[@]} "activate_venv")
