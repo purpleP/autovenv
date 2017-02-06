@@ -31,8 +31,8 @@ has_python_packages() {
     if ! [[ -e $(pwd)/__init__.py ]]; then
         local package=$(find $(pwd) -maxdepth 1 -type d -exec test -e "{}/__init__.py" \; -print -quit)
         if [[ -n $package && ":$PYTHONPATH:" != *":$(pwd):"* ]]; then
-            for path in ${PYTHONPATH//:/ }; do
-                [[ $PWD/ = $path ]]; return 0
+            for p in ${PYTHONPATH//:/ }; do
+                [[ $PWD/ = $p ]]; return 0
             done
             export PYTHONPATH=$PYTHONPATH:$(pwd)
         fi
