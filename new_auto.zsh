@@ -6,38 +6,35 @@ activate_venv() {
     else
         deactivate 2>/dev/null
     fi
-    return 0
 }
 
 find_venv() {
     local project_root=$(git rev-parse --show-toplevel 2>/dev/null)
     if [[ -n $project_root ]]; then
-        venv_dir=$(find -maxdepth 1 -type d -exec test -e "{}/bin/activate" \; -print -quit)
-        [[ -n $venv_dir ]]; echo $venv_dir; return 0
+        venv_dir=$(find $project_root -maxdepth 1 -type d -exec test -e "{}/bin/activate" \; -print -quit 2>/dev/null)
+        if [[ -n $venv_dir ]]; then
+            echo $venv_dir
+            return 0
+        fi
     fi
-    local search_path venv_dir
-    search_path=$(pwd)
-    local common_home=$(dirname $HOME)
-    while [[ $search_path != $common_home && $search_path != '' ]]; do
-        venv_dir=$(find -maxdepth 1 -type d -exec test -e "{}/bin/activate" \; -print -quit);
-        [[ -n $venv_dir ]]; echo $venv_dir; return 0
-        search_path=$(dirname $search_path)
+    local search_in=($PWD)
+    while [[ $search_in[-1] != '/' ]]; do
+        search_in+=($(dirname $search_in[-1]))
     done
-    return 0
+    find $search_in -maxdepth 1 -type d -exec test -e "{}/bin/activate" \; -print -quit 2>/dev/null
 }
 
 has_python_packages() {
     local search_path=$(pwd)
-    if ! [[ -e $(pwd)/__init__.py ]]; then
-        local package=$(find $(pwd) -maxdepth 1 -type d -exec test -e "{}/__init__.py" \; -print -quit)
-        if [[ -n $package && ":$PYTHONPATH:" != *":$(pwd):"* ]]; then
+    if ! [[ -e $search_path/__init__.py ]]; then
+        local package=$(find $search_path -maxdepth 1 -type d -exec test -e "{}/__init__.py" \; -print -quit 2>/dev/null)
+        if [[ -n $package && ":$PYTHONPATH:" != *":$search_path:"* ]]; then
             for p in ${PYTHONPATH//:/ }; do
-                [[ $PWD/ = $p ]]; return 0
+                [[ $search_path/ = $p ]]; return 0
             done
-            export PYTHONPATH=$PYTHONPATH:$(pwd)
+            export PYTHONPATH=$PYTHONPATH:$search_path
         fi
     fi
-    return 0
 }
 chpwd_functions=(${chpwd_functions[@]} "has_python_packages")
 chpwd_functions=(${chpwd_functions[@]} "activate_venv")
